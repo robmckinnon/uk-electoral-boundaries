@@ -1,80 +1,94 @@
-var shuffle = require("lodash.shuffle");
+// var shuffle = require("lodash.shuffle");
 
-function findAdjacentPairs(inputList) {
-  let pairs;
-  let processedIds;
-  let unmatched;
-  const allIds = new Set();
-  const appearsOnceIds = new Set();
-
-  inputList.forEach((regionIds) => {
-    regionIds.forEach((id) => {
-      if (allIds.has(id)) {
-        appearsOnceIds.delete(id);
+function updateAppearsMore(pairs, neighbours, processedIds) {
+  let match = false;
+  return neighbours.map((neighbourIds, currentId) => {
+    if (neighbourIds.length === 0 || processedIds.has(currentId)) {
+      return [];
+    } else if (neighbourIds.length > 1) {
+      const neighbourId = neighbourIds[0];
+      if (processedIds.has(neighbourId) || match) {
+        return neighbourIds;
       } else {
-        appearsOnceIds.add(id);
-        allIds.add(id);
+        pairs.push([currentId, neighbourId].sort());
+        processedIds.add(currentId);
+        processedIds.add(neighbourId);
+        match = true;
+        return neighbourIds.slice(1);
       }
+    } else {
+      return neighbourIds.filter((id) => !processedIds.has(id));
+    }
+  });
+}
+function updateAppearsOnce(pairs, neighbours, processedIds) {
+  return neighbours.map((neighbourIds, currentId) => {
+    if (neighbourIds.length === 0 || processedIds.has(currentId)) {
+      return [];
+    } else if (neighbourIds.length === 1) {
+      const neighbourId = neighbourIds[0];
+      if (!processedIds.has(neighbourId)) {
+        pairs.push([currentId, neighbourId].sort());
+        processedIds.add(currentId);
+        processedIds.add(neighbourId);
+      }
+      return [];
+    } else {
+      return neighbourIds.filter((id) => !processedIds.has(id));
+    }
+  });
+}
+
+function findAdjacentPairs(neighbours, ids, idPairs) {
+  const allIds = new Set();
+  neighbours.forEach((_, currentId) => allIds.add(currentId));
+  const pairs = [];
+  const processedIds = new Set();
+
+  if (idPairs) {
+    idPairs.forEach(([id1, id2]) => {
+      const i1 = ids.indexOf(id1);
+      const i2 = ids.indexOf(id2);
+      pairs.push([i1, i2].sort());
+      processedIds.add(i1);
+      processedIds.add(i2);
+      neighbours[i1] = neighbours[i1].filter((x) => x !== i2);
+      neighbours[i2] = neighbours[i1].filter((x) => x !== i1);
     });
+  }
+
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsMore(pairs, neighbours, processedIds);
+
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsMore(pairs, neighbours, processedIds);
+
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsMore(pairs, neighbours, processedIds);
+
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsMore(pairs, neighbours, processedIds);
+
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+  neighbours = updateAppearsMore(pairs, neighbours, processedIds);
+
+  let unmatched = Array.from(allIds).filter((id) => !processedIds.has(id));
+  unmatched.forEach((x) => {
+    neighbours = updateAppearsOnce(pairs, neighbours, processedIds);
+    neighbours = updateAppearsMore(pairs, neighbours, processedIds);
   });
 
-  processedIds = new Set();
-  pairs = [];
-
-  for (const regionIds of shuffle(inputList)) {
-    const filteredRegionIds = regionIds.filter(
-      (regionId) => !processedIds.has(regionId)
-    );
-    for (let i = 0; i < filteredRegionIds.length - 1; i++) {
-      const regionId1 = filteredRegionIds[i];
-      const regionId2 = filteredRegionIds[i + 1];
-      if (
-        (appearsOnceIds.has(regionId1) || appearsOnceIds.has(regionId2)) &&
-        !processedIds.has(regionId1) &&
-        !processedIds.has(regionId2)
-      ) {
-        pairs.push([regionId1, regionId2]);
-
-        // Mark the region IDs as processed
-        processedIds.add(regionId1);
-        processedIds.add(regionId2);
-      }
-    }
-  }
-
-  for (const regionIds of inputList) {
-    const filteredRegionIds = regionIds.filter(
-      (regionId) => !processedIds.has(regionId)
-    );
-    filteredRegionIds.forEach((id) => {
-      if (allIds.has(id)) {
-        appearsOnceIds.delete(id);
-      } else {
-        appearsOnceIds.add(id);
-
-        allIds.add(id);
-      }
-    });
-    for (let i = 0; i < filteredRegionIds.length - 1; i += 2) {
-      const regionId1 = filteredRegionIds[i];
-      const regionId2 = filteredRegionIds[i + 1];
-
-      pairs.push([regionId1, regionId2]);
-
-      // Mark the region IDs as processed
-      processedIds.add(regionId1);
-      processedIds.add(regionId2);
-    }
-  }
-
-  unmatched = Array.from(allIds).filter((id) => !processedIds.has(id));
-  unmatchedCount = unmatched.length;
-  // while (unmatchedCount > 12) {
-  // }
-
-  const appearsOnce = Array.from(appearsOnceIds);
-
-  return { pairs, unmatched, appearsOnce };
+  return { pairs, unmatched };
 }
 
 // var out4 = findAdjacentPairs(n);
